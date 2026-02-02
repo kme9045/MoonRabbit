@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 신년 윷놀이 퍼즐</title>
+    <!-- Tailwind CSS (스타일링) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM (코어 라이브러리) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel (브라우저 내 JSX 변환) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* 커스텀 스크롤바 등 스타일 */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-user-select: none; /* 모바일 터치 시 텍스트 선택 방지 */
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        // --- 아이콘 컴포넌트 내장 (외부 의존성 제거로 안정성 확보) ---
+        const Icon = ({ children, size = 16, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+
+        // 사용된 아이콘 정의
+        const RefreshCw = (p) => <Icon {...p}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></Icon>;
+        const CheckCircle = (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
+        const Info = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></Icon>;
+        const Calendar = (p) => <Icon {...p}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Icon>;
+        const PlayCircle = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></Icon>;
+        const MapPin = (p) => <Icon {...p}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></Icon>;
+        const Gem = (p) => <Icon {...p}><path d="M6 3h12l4 6-10 13L2 9z"/></Icon>;
+        const Hammer = (p) => <Icon {...p}><path d="m15 12-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25V2.46V2a2 2 0 0 0-2-2h-3c-.85 0-1.65.33-2.25.93L10.2 2.18"/><path d="M15 12l-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"/></Icon>;
+        const RotateCcw = (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></Icon>;
+        const Flag = (p) => <Icon {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></Icon>;
+        const Zap = (p) => <Icon {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Icon>;
+        const Trophy = (p) => <Icon {...p}><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10"/><path d="M17 4v3a5 5 0 0 1-10 0V4"/><line x1="8" y1="4" x2="8" y2="4"/><line x1="16" y1="4" x2="16" y2="4"/><path d="M17 8.5c.78 0 1.55.07 2.3.2 2.65.45 4.3 2.92 3.7 5.56-.56 2.5-3.05 4.18-5.63 3.76-.17-.03-.33-.07-.5-.11"/><path d="M7 8.5c-.78 0-1.55.07-2.3.2-2.65.45-4.3 2.92-3.7 5.56.56 2.5 3.05 4.18 5.63 3.76.17-.03.33-.07.5-.11"/></Icon>;
+        const X = (p) => <Icon {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></Icon>;
+        const Gift = (p) => <Icon {...p}><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></Icon>;
+        const BookOpen = (p) => <Icon {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
+        const LayoutGrid = (p) => <Icon {...p}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></Icon>;
+        const Clock = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></Icon>;
+        const Lock = (p) => <Icon {...p}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Icon>;
+        const PlusCircle = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></Icon>;
+        const Star = (p) => <Icon {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Icon>;
+        const Sparkles = (p) => <Icon {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 19v-4"/><path d="M15 17h4"/></Icon>;
+        const ChevronRight = (p) => <Icon {...p}><polyline points="9 18 15 12 9 6"/></Icon>;
+        const FastForward = (p) => <Icon {...p}><polygon points="13 19 22 12 13 5 13 19"/><polygon points="2 19 11 12 2 5 2 19"/></Icon>;
+        const HelpCircle = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></Icon>;
+        const ArrowRight = (p) => <Icon {...p}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></Icon>;
+        const Check = (p) => <Icon {...p}><polyline points="20 6 9 17 4 12"/></Icon>;
+        const Play = (p) => <Icon {...p}><polygon points="5 3 19 12 5 21 5 3"/></Icon>;
+
+
+        /**
+         * ==========================================
+         * [규칙 명세 v5.3] 미션 실행(수행) 단계 추가
+         * - 일일 미션: [진행] -> 수행 연출 -> [받기] 활성화
+         * - 주간 미션: [진행] -> 게이지 상승 -> 목표 달성 시 [받기] 활성화
+         * ==========================================
+         */
+
+        const ILLUST_IMAGE_URL = "https://images.unsplash.com/photo-1597839219216-a773cb2473ad?q=80&w=800&auto=format&fit=crop";
+
+        const CONFIG = {
+          MOVE_DELAY_MS: 300,   
+          
+          // 1. 수급 밸런스
+          DAILY_MISSION_CAP: 3,     
+          WEEKLY_MISSION_CAP: 2,    
+          WEEKLY_MISSION_REWARD: 1, 
+          
+          // 2. CP 규칙 (이동거리 기반)
+          DISTANCE_PER_CP: 6,    // 6칸 이동마다 CP +1
+          CP_MAX: 12,            // 최대 12단계
+          
+          // 3. 완주 규칙
+          MAX_LAPS: 4,           
+          
+          // 4. 풀 생성 목표치
+          TARGET_TOTAL_STEPS: 104, 
+          POOL_SIZE: 46, 
+
+          // UI 표시용 총 보상
+          TOTAL_REWARD_DISPLAY: { RUBY: 140000, HAMMER: 20000 } 
+        };
+
+        // [D.1] CP 보상 테이블 (고정 - 자동 지급)
+        const CP_RUBY_PER_LEVEL = 5000;
+
+        // [D.2] 완주 보상 테이블 (점증 - 수동 수령)
+        const LAP_REWARDS = [
+          null,
+          { RUBY: 10000, HAMMER: 2000 }, // 1회차
+          { RUBY: 15000, HAMMER: 4000 }, // 2회차
+          { RUBY: 20000, HAMMER: 6000 }, // 3회차
+          { RUBY: 35000, HAMMER: 8000 }, // 4회차
+        ];
+
+        const YUT_DATA = {
+          1: { name: '도', prob: 0.30 },
+          2: { name: '개', prob: 0.30 },
+          3: { name: '걸', prob: 0.20 },
+          4: { name: '윷', prob: 0.15 },
+          5: { name: '모', prob: 0.05 },
+        };
+
+        /** [데이터] 보드 노드 정의 (29 Nodes) */
+        const BOARD_NODES = [
+          { id: 0, type: 'CORNER', label: '출발', x: 100, y: 100, isStart: true },
+          { id: 1, type: 'NORMAL', x: 100, y: 80 }, { id: 2, type: 'NORMAL', x: 100, y: 60 }, { id: 3, type: 'NORMAL', x: 100, y: 40 }, { id: 4, type: 'NORMAL', x: 100, y: 20 },
+          { id: 5, type: 'BRANCH', label: '지름길', x: 100, y: 0, isBranch: true },   
+          { id: 6, type: 'NORMAL', x: 80, y: 0 }, { id: 7, type: 'NORMAL', x: 60, y: 0 }, { id: 8, type: 'NORMAL', x: 40, y: 0 }, { id: 9, type: 'NORMAL', x: 20, y: 0 },
+          { id: 10, type: 'BRANCH', label: '지름길', x: 0, y: 0, isBranch: true },    
+          { id: 11, type: 'NORMAL', x: 0, y: 20 }, { id: 12, type: 'NORMAL', x: 0, y: 40 }, { id: 13, type: 'NORMAL', x: 0, y: 60 }, { id: 14, type: 'NORMAL', x: 0, y: 80 },
+          { id: 15, type: 'CORNER', label: '정류장', x: 0, y: 100 },    
+          { id: 16, type: 'NORMAL', x: 20, y: 100 }, { id: 17, type: 'NORMAL', x: 40, y: 100 }, { id: 18, type: 'NORMAL', x: 60, y: 100 }, { id: 19, type: 'NORMAL', x: 80, y: 100 },
+          { id: 20, type: 'NORMAL', x: 80, y: 20 }, { id: 21, type: 'NORMAL', x: 60, y: 40 },
+          { id: 22, type: 'CENTER', label: '방', x: 50, y: 50, isBranch: true },
+          { id: 23, type: 'NORMAL', x: 40, y: 60 }, { id: 24, type: 'NORMAL', x: 20, y: 80 },
+          { id: 25, type: 'NORMAL', x: 20, y: 20 }, { id: 26, type: 'NORMAL', x: 40, y: 40 },
+          { id: 27, type: 'NORMAL', x: 60, y: 60 }, { id: 28, type: 'NORMAL', x: 80, y: 80 },
+        ];
+
+        const DAILY_MISSION_POOL = [
+          { id: 'd1', title: '로그인 1회' }, { id: 'd2', title: '플레이 30분' }, { id: 'd3', title: '광고 1회 시청' },
+          { id: 'd4', title: '길드 출석 1회' }, { id: 'd5', title: '골드&경험치 던전' }, { id: 'd6', title: '몬스터 5,000마리' },
+          { id: 'd7', title: '캐릭터 레벨업' }, { id: 'd8', title: '보물 던전 1회' }, { id: 'd9', title: '수호자의 탑 1회' }, { id: 'd10', title: '마법 지대 1회' }
+        ];
+
+        const WEEKLY_MISSION_POOL = [
+          { id: 'w1', title: '월드 보스 1회', goal: 1 }, { id: 'w2', title: '길드 토벌전 2회', goal: 2 },
+          { id: 'w3', title: '초월의 공간 1회', goal: 1 }, { id: 'w4', title: '동료 무기뽑기 100회', goal: 100 }
+        ];
+
+        const HELP_TEXTS = [
+          "CP 보상: 6칸 이동마다 자동 지급",
+          "완주 보상: 출발점 통과 후 '받기' 버튼 클릭",
+          "지름길: 분기점에 정확히 멈추면 자동 이동",
+          "14일간 풀참여 시 모든 보상 100% 획득 가능"
+        ];
+
+        // Helper
+        const getSafePct = (current, total) => {
+          if (!total || total === 0) return 0;
+          const pct = (current / total) * 100;
+          return isNaN(pct) ? 0 : pct;
+        };
+
+        // [Core] Result Deck Generator
+        const generateSeasonDeck = () => {
+          let deck = [];
+          let totalSteps = 0;
+          for (let i = 0; i < CONFIG.POOL_SIZE; i++) {
+            const rand = Math.random();
+            let move = 1;
+            let cumulative = 0;
+            for (let k = 1; k <= 5; k++) {
+              cumulative += YUT_DATA[k].prob;
+              if (rand < cumulative) { move = k; break; }
+            }
+            deck.push(move);
+            totalSteps += move;
+          }
+          while (totalSteps < CONFIG.TARGET_TOTAL_STEPS) {
+            const idx = deck.findIndex(v => v <= 2);
+            if (idx !== -1) {
+              const upgrade = Math.floor(Math.random() * 3) + 3; 
+              totalSteps = totalSteps - deck[idx] + upgrade;
+              deck[idx] = upgrade;
+            } else {
+              deck[0] += 1; totalSteps += 1;
+            }
+          }
+          for (let i = deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+          }
+          return deck;
+        };
+
+        /** 메인 앱 컴포넌트 */
+        function App() {
+          // State
+          const [currentDate, setCurrentDate] = useState(new Date('2026-01-01T00:00:00'));
+          const [dayCount, setDayCount] = useState(1);
+          const [logs, setLogs] = useState([]);
+          const [showHelp, setShowHelp] = useState(false);
+
+          // Deck
+          const [seasonDeck, setSeasonDeck] = useState([]); 
+          const [earnedIndex, setEarnedIndex] = useState(0); 
+          const [thrownIndex, setThrownIndex] = useState(0); 
+          const throwsAvailable = earnedIndex - thrownIndex;
+
+          // Missions (readyToClaim 상태 추가)
+          const [dailyCompletedCount, setDailyCompletedCount] = useState(0);
+          const [weeklyCompletedCount, setWeeklyCompletedCount] = useState(0);
+          const [dailyMissions, setDailyMissions] = useState([]);
+          const [weeklyMissions, setWeeklyMissions] = useState([]);
+
+          // Game State
+          const [totalDistance, setTotalDistance] = useState(0); 
+          const [cpLevel, setCpLevel] = useState(0); 
+          const [lapCount, setLapCount] = useState(0); 
+          const [positionNodeId, setPositionNodeId] = useState(0);
+          
+          const [rewards, setRewards] = useState({ ruby: 0, hammer: 0 });
+
+          // Reward Flags
+          const [cpClaimed, setCpClaimed] = useState({}); 
+          const [lapClaimed, setLapClaimed] = useState({}); 
+
+          const [isMoving, setIsMoving] = useState(false);
+          const [lastThrow, setLastThrow] = useState(null);
+          const [popupMessage, setPopupMessage] = useState(null);
+          const [showConfetti, setShowConfetti] = useState(false);
+
+          // Derived Values
+          const remainingCpSteps = CONFIG.DISTANCE_PER_CP - (totalDistance % CONFIG.DISTANCE_PER_CP);
+
+          // Ref for long press interval
+          const pressIntervalRef = useRef(null);
+
+          // Init
+          useEffect(() => { 
+            const deck = generateSeasonDeck();
+            setSeasonDeck(deck);
+            refreshMissions(); 
+          }, []);
+
+          const refreshMissions = () => {
+            const shuffledDaily = [...DAILY_MISSION_POOL].sort(() => 0.5 - Math.random()).slice(0, 5);
+            // dailyMissions: completed=보상수령완료, ready=수행완료(보상대기)
+            setDailyMissions(shuffledDaily.map(m => ({ ...m, completed: false, ready: false })));
+            setDailyCompletedCount(0);
+            
+            if (weeklyMissions.length === 0) {
+              setWeeklyMissions([...WEEKLY_MISSION_POOL].sort(() => 0.5 - Math.random()).slice(0, 2).map(m => ({ ...m, progress: 0, completed: false })));
+            }
+          };
+
+          const addLog = (msg) => setLogs(prev => [`[Day ${dayCount}] ${msg}`, ...prev].slice(0, 20));
+          const triggerPopup = (msg) => { setPopupMessage(msg); setTimeout(() => setPopupMessage(null), 2500); };
+
+          // --- Game Logic ---
+          const getNextNode = (currentId, isStartingTurn = false) => {
+            if (isStartingTurn) {
+              if (currentId === 5) return 20; if (currentId === 10) return 25; if (currentId === 22) return 27;
+            }
+            if (currentId === 20) return 21; if (currentId === 21) return 22; if (currentId === 23) return 24; if (currentId === 24) return 15;
+            if (currentId === 25) return 26; if (currentId === 26) return 22; if (currentId === 27) return 28; if (currentId === 28) return 0;
+            if (currentId === 19) return 0;
+            return currentId + 1;
+          };
+
+          const handleThrow = () => {
+            if (throwsAvailable <= 0 || isMoving || (cpLevel >= CONFIG.CP_MAX && lapCount >= CONFIG.MAX_LAPS && lapClaimed[CONFIG.MAX_LAPS])) return;
+            
+            setIsMoving(true);
+
+            const move = seasonDeck[thrownIndex];
+            setThrownIndex(prev => prev + 1);
+
+            const resultName = YUT_DATA[move].name;
+            setLastThrow({ name: resultName, move: move });
+            addLog(`윷 던짐: ${resultName} (+${move}칸)`);
+
+            const newDist = totalDistance + move;
+            setTotalDistance(newDist);
+            
+            const newCpLevel = Math.min(CONFIG.CP_MAX, Math.floor(newDist / CONFIG.DISTANCE_PER_CP));
+            
+            let gainedRuby = 0;
+            let newClaims = {};
+            for (let level = cpLevel + 1; level <= newCpLevel; level++) {
+              if (!cpClaimed[level]) {
+                gainedRuby += CP_RUBY_PER_LEVEL;
+                newClaims[level] = true;
+              }
+            }
+
+            if (gainedRuby > 0) {
+              setCpLevel(newCpLevel);
+              setCpClaimed(prev => ({ ...prev, ...newClaims }));
+              setRewards(prev => ({ ...prev, ruby: prev.ruby + gainedRuby }));
+              
+              setTimeout(() => {
+                triggerPopup({ 
+                  text: `CP ${newCpLevel} 달성!`, 
+                  subtext: `루비 +${gainedRuby.toLocaleString()} (자동지급)`, 
+                  type: 'reward' 
+                });
+              }, 300);
+            } else {
+                setCpLevel(newCpLevel);
+            }
+
+            processVisualMove(move);
+          };
+
+          const processVisualMove = async (steps) => {
+            let curr = positionNodeId, left = steps, isFirst = true;
+            while (left > 0) {
+              await new Promise(r => setTimeout(r, CONFIG.MOVE_DELAY_MS));
+              curr = getNextNode(curr, isFirst);
+              isFirst = false;
+              setPositionNodeId(curr);
+              
+              if (curr === 0) {
+                handleLapComplete();
+              }
+              left--;
+            }
+            
+            if (curr === 5 || curr === 10) addLog("지름길 입구 도착 (다음 턴 자동 이동)");
+
+            setIsMoving(false);
+          };
+
+          const handleLapComplete = () => {
+            setLapCount(prev => {
+              const nextLap = Math.min(prev + 1, CONFIG.MAX_LAPS);
+              if (nextLap > prev) {
+                addLog(`출발점 통과! 완주 ${nextLap}회 달성 (보상 수령 대기)`);
+              }
+              return nextLap;
+            });
+          };
+
+          const claimLapReward = (lapTarget) => {
+            if (lapClaimed[lapTarget]) return;
+            if (lapCount < lapTarget) return;
+
+            const reward = LAP_REWARDS[lapTarget];
+            if (reward) {
+              setRewards(p => ({ ruby: p.ruby + reward.RUBY, hammer: p.hammer + reward.HAMMER }));
+              setLapClaimed(p => ({ ...p, [lapTarget]: true }));
+              
+              triggerPopup({ 
+                  text: `완주 ${lapTarget}회 보상 획득!`, 
+                  subtext: `루비 ${reward.RUBY.toLocaleString()} / 망치 ${reward.HAMMER.toLocaleString()}`, 
+                  type: 'lap' 
+              });
+              
+              if (lapTarget >= 4) { 
+                  setShowConfetti(true); 
+                  addLog("최종 완주 보상 수령 완료!", 'finish'); 
+              }
+            }
+          };
+
+          // --- Missions Logic Updated ---
+          
+          const earnSticks = (amount) => {
+            setEarnedIndex(prev => Math.min(prev + amount, CONFIG.POOL_SIZE));
+          };
+
+          // [일일 미션] 1단계: 수행(Go) -> 2단계: 받기(Claim)
+          const doDailyMission = (idx) => {
+            if (dailyMissions[idx].ready || dailyMissions[idx].completed) return;
+            const next = [...dailyMissions];
+            next[idx].ready = true;
+            setDailyMissions(next);
+          };
+
+          const claimDailyMission = (idx) => {
+            if (dailyMissions[idx].completed || !dailyMissions[idx].ready) return;
+            if (dailyCompletedCount >= CONFIG.DAILY_MISSION_CAP) return;
+
+            const next = [...dailyMissions];
+            next[idx].completed = true;
+            setDailyMissions(next);
+            
+            earnSticks(1);
+            setDailyCompletedCount(p => p + 1);
+          };
+
+          // [주간 미션] 진행(Advance) -> 완료되면 받기(Claim)
+          const advanceWeekly = (idx) => {
+            const mission = weeklyMissions[idx];
+            if (mission.completed) return;
+            
+            const next = [...weeklyMissions];
+            next[idx].progress = Math.min(mission.goal, mission.progress + 1); 
+            if (mission.goal >= 10) next[idx].progress = Math.min(mission.goal, mission.progress + 10);
+            
+            setWeeklyMissions(next);
+          };
+
+          // 롱프레스 핸들러
+          const handlePressStart = (idx) => {
+            if (pressIntervalRef.current) return;
+            advanceWeekly(idx);
+            pressIntervalRef.current = setInterval(() => {
+              advanceWeekly(idx);
+            }, 100); 
+          };
+
+          const handlePressEnd = () => {
+            if (pressIntervalRef.current) {
+              clearInterval(pressIntervalRef.current);
+              pressIntervalRef.current = null;
+            }
+          };
+
+          const claimWeekly = (idx) => {
+            const mission = weeklyMissions[idx];
+            if (mission.completed || mission.progress < mission.goal || weeklyCompletedCount >= CONFIG.WEEKLY_MISSION_CAP) return;
+
+            const next = [...weeklyMissions];
+            next[idx].completed = true;
+            setWeeklyMissions(next);
+            
+            earnSticks(CONFIG.WEEKLY_MISSION_REWARD);
+            setWeeklyCompletedCount(p => p + 1);
+            triggerPopup({ text: "주간 미션 완료!", subtext: `윷가락 +${CONFIG.WEEKLY_MISSION_REWARD}개 획득`, type: 'reward' });
+          };
+
+          const debugNextDay = () => {
+            setDayCount(p => p + 1);
+            const next = new Date(currentDate); next.setDate(next.getDate() + 1); setCurrentDate(next);
+            refreshMissions();
+            if (dayCount + 1 === 8) {
+                setWeeklyMissions([...WEEKLY_MISSION_POOL].sort(() => 0.5 - Math.random()).slice(0, 2).map(m => ({ ...m, progress: 0, completed: false })));
+                setWeeklyCompletedCount(0);
+                addLog("Week 2 시작! 주간 미션 갱신");
+            }
+            addLog(`Day ${dayCount + 1} 시작`);
+          };
+
+          return (
+            <div className="min-h-screen bg-[#1a1a1a] text-white font-sans selection:bg-amber-500 selection:text-black">
+              
+              {/* 1. 상단 (헤더) */}
+              <header className="bg-[#2c1810] border-b border-[#5d4037] px-4 py-3 sticky top-0 z-50 shadow-lg">
+                <div className="max-w-6xl mx-auto flex items-center justify-between">
+                  
+                  <div className="flex flex-col items-start w-1/3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-gray-400 text-xs">CP 단계</span>
+                      <span className="text-xl font-bold text-amber-400">{cpLevel}/{CONFIG.CP_MAX}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                       <span>다음 CP까지</span>
+                       <span className="text-amber-200 font-bold">{remainingCpSteps}칸</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-center w-1/3 border-l border-r border-[#5d4037]/30">
+                    <div className="bg-black/30 px-4 py-1.5 rounded-full border border-amber-500/20 flex items-center gap-2">
+                      <span className="text-xs text-amber-200 font-bold">CP 보상:</span>
+                      <div className="flex items-center gap-1 text-xs">
+                        <Gem size={10} className="text-red-400"/> <span>5,000</span>
+                        <span className="text-gray-500">(자동)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-end w-1/3">
+                    <span className="text-gray-400 text-[10px] mb-0.5">누적 보상</span>
+                    <div className="flex gap-3 text-xs font-mono">
+                      <div className="flex items-center gap-1"><Gem size={12} className="text-red-500"/> {rewards.ruby.toLocaleString()}<span className="text-gray-600">/140k</span></div>
+                      <div className="flex items-center gap-1"><Hammer size={12} className="text-blue-500"/> {rewards.hammer.toLocaleString()}<span className="text-gray-600">/20k</span></div>
+                    </div>
+                  </div>
+
+                  <button onClick={() => setShowHelp(!showHelp)} className="absolute right-2 top-2 p-2 text-gray-400 hover:text-white">
+                    <HelpCircle size={18} />
+                  </button>
+                </div>
+                
+                {showHelp && (
+                  <div className="absolute right-4 top-12 bg-black/90 border border-amber-500/30 p-3 rounded-lg shadow-xl z-50 text-xs text-gray-200 w-64 space-y-1.5">
+                    {HELP_TEXTS.map((t, i) => <div key={i} className="flex gap-2"><span className="text-amber-500">•</span>{t}</div>)}
+                  </div>
+                )}
+              </header>
+
+              <main className="max-w-6xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 relative">
+                {showConfetti && (
+                  <div className="absolute inset-0 pointer-events-none z-[100] flex justify-center overflow-hidden">
+                     {[...Array(20)].map((_, i) => <div key={i} className="absolute animate-bounce text-2xl" style={{left: Math.random()*100+'%', top: '-5%', animationDelay: Math.random()+'s'}}>🎉</div>)}
+                  </div>
+                )}
+
+                {/* 2. 좌측 패널 (획득) */}
+                <section className="lg:col-span-3 flex flex-col gap-4">
+                  
+                  <div className="bg-[#3e2723] p-4 rounded-xl border border-[#5d4037] shadow-lg flex justify-between items-center">
+                    <div>
+                      <div className="text-2xl font-black text-white flex items-baseline gap-1">
+                        보유 윷가락 <span className="text-amber-400">{throwsAvailable}</span>개
+                      </div>
+                      <div className="text-[10px] text-gray-400 mt-1">던지기 제한 없음</div>
+                    </div>
+                    <div className="bg-black/20 px-2 py-1 rounded text-[10px] text-amber-200/50 font-mono">Day {dayCount}</div>
+                  </div>
+
+                  {/* 일일 미션 (2단계 버튼) */}
+                  <div className="bg-[#3e2723] rounded-xl border border-[#5d4037] overflow-hidden flex-1">
+                    <div className="p-3 bg-black/20 border-b border-[#5d4037] flex justify-between items-center">
+                      <h3 className="font-bold text-amber-100 text-sm flex items-center gap-2">
+                        <CheckCircle size={14} className="text-green-400"/> 오늘의 미션 ({dailyCompletedCount}/{CONFIG.DAILY_MISSION_CAP})
+                      </h3>
+                      <button onClick={debugNextDay} className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded text-gray-400">Day+1</button>
+                    </div>
+                    <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto custom-scrollbar">
+                      {dailyMissions.map((m, idx) => {
+                        const isCapped = dailyCompletedCount >= CONFIG.DAILY_MISSION_CAP && !m.completed;
+                        return (
+                          <div key={m.id} className="flex justify-between items-center p-2 rounded hover:bg-black/10 transition-colors">
+                            <span className={`text-xs ${m.completed ? 'text-gray-500 line-through' : 'text-gray-200'}`}>{m.title}</span>
+                            
+                            {/* 상태별 버튼 렌더링 */}
+                            {m.completed ? (
+                              <span className="text-[10px] text-gray-500 font-bold px-2">완료</span>
+                            ) : m.ready ? (
+                              <button 
+                                onClick={() => claimDailyMission(idx)}
+                                disabled={isCapped}
+                                className={`text-[10px] px-2 py-1 rounded border ${isCapped ? 'border-gray-600 text-gray-500' : 'border-amber-500 bg-amber-600/20 text-amber-400 hover:bg-amber-600 hover:text-white animate-pulse'}`}
+                              >
+                                받기 (+1)
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => doDailyMission(idx)}
+                                disabled={isCapped}
+                                className={`text-[10px] px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-gray-300 flex items-center gap-1 ${isCapped ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              >
+                                <span>진행</span>
+                                <ArrowRight size={8} />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 주간 미션 (꾹 누르기 기능 추가) */}
+                  <div className="bg-[#3e2723] rounded-xl border border-[#5d4037] overflow-hidden">
+                    <div className="p-3 bg-black/20 border-b border-[#5d4037] flex justify-between items-center">
+                      <h3 className="font-bold text-amber-100 text-sm flex items-center gap-2">
+                        <PlusCircle size={14} className="text-blue-400"/> 주간 미션 ({weeklyCompletedCount}/{CONFIG.WEEKLY_MISSION_CAP})
+                      </h3>
+                    </div>
+                    <div className="p-2 space-y-1">
+                      {weeklyMissions.map((m, idx) => {
+                        const isFull = m.progress >= m.goal;
+                        const isClaimed = m.completed;
+                        const isCapped = weeklyCompletedCount >= CONFIG.WEEKLY_MISSION_CAP && !isClaimed;
+                        
+                        return (
+                          <div key={m.id} className="flex flex-col p-2 rounded bg-black/10">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className={`text-xs ${isClaimed ? 'text-gray-500 line-through' : 'text-gray-200'}`}>{m.title}</span>
+                              
+                              {isClaimed ? (
+                                <span className="text-[10px] text-gray-500 font-bold">완료됨</span>
+                              ) : isFull ? (
+                                <button 
+                                  onClick={() => claimWeekly(idx)}
+                                  disabled={isCapped}
+                                  className={`text-[10px] px-2 py-0.5 rounded font-bold ${isCapped ? 'text-gray-500' : 'bg-blue-600 text-white animate-pulse'}`}
+                                >
+                                  받기 (+1)
+                                </button>
+                              ) : (
+                                <button 
+                                  onMouseDown={() => handlePressStart(idx)}
+                                  onMouseUp={handlePressEnd}
+                                  onMouseLeave={handlePressEnd}
+                                  onTouchStart={() => handlePressStart(idx)}
+                                  onTouchEnd={handlePressEnd}
+                                  disabled={isCapped}
+                                  className={`text-[10px] px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-gray-300 flex items-center gap-1 ${isCapped ? 'opacity-50' : 'active:bg-white/20 select-none'}`}
+                                >
+                                  <Play size={8} fill="currentColor" /> 진행
+                                </button>
+                              )}
+                            </div>
+                            <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden flex items-center relative">
+                               <div className={`h-full transition-all duration-300 ${isClaimed ? 'bg-gray-600' : 'bg-blue-500'}`} style={{width: `${(m.progress / m.goal) * 100}%`}}></div>
+                            </div>
+                            <div className="text-[9px] text-right text-gray-500 mt-0.5">{m.progress}/{m.goal}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </section>
+
+                {/* 3. 중앙 (보드) */}
+                <section className="lg:col-span-6 relative flex flex-col items-center gap-4">
+                   {popupMessage && (
+                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-black/80 text-white px-6 py-3 rounded-xl border border-amber-500 shadow-2xl flex flex-col items-center animate-in zoom-in fade-in duration-200 min-w-[200px]">
+                       <div className="text-lg font-bold text-amber-300">{popupMessage.text}</div>
+                       {popupMessage.subtext && <div className="text-xs text-gray-300 mt-1">{popupMessage.subtext}</div>}
+                     </div>
+                   )}
+
+                   <div className="relative w-full aspect-square max-w-[480px] bg-[#d7ccc8] rounded-[2.5rem] border-[8px] border-[#3e2723] shadow-2xl overflow-hidden">
+                      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] opacity-40"></div>
+                      <div className="absolute inset-8">
+                         <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-50"><rect width="100%" height="100%" rx="16" fill="none" stroke="#3e2723" strokeWidth="4"/><path d="M0 0 L100% 100% M100% 0 L0 100%" stroke="#3e2723" strokeWidth="4" strokeDasharray="8 4"/></svg>
+                         {BOARD_NODES.map(node => (
+                           <div key={node.id} className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300" style={{ left: `${node.x}%`, top: `${node.y}%` }}>
+                             <div className={`flex items-center justify-center rounded-full border shadow-sm ${node.isCenter ? 'w-14 h-14 bg-[#bcaaa4] border-amber-600' : (node.isBranch || node.isStart) ? 'w-10 h-10 bg-[#bcaaa4] border-[#5d4037]' : 'w-6 h-6 bg-[#efebe9] border-[#a1887f]'}`}>
+                               {node.label && <span className="absolute -top-5 text-[9px] bg-[#3e2723] text-amber-100 px-1.5 rounded shadow whitespace-nowrap">{node.label}</span>}
+                               {node.isStart && <Flag size={12} className="text-red-600 absolute -bottom-4"/>}
+                             </div>
+                             {positionNodeId === node.id && <div className="absolute -top-6 left-1/2 -translate-x-1/2 animate-bounce drop-shadow-lg flex flex-col items-center">
+                                 <div className="bg-red-600 text-white text-[8px] px-1.5 py-0.5 rounded-full mb-0.5 whitespace-nowrap shadow-md border border-white/20">
+                                   CP-{remainingCpSteps}
+                                 </div>
+                                 <MapPin size={32} className="text-red-600 fill-current"/>
+                               </div>}
+                           </div>
+                         ))}
+                      </div>
+                   </div>
+                   
+                   {/* 핵심 규칙 가이드 카드 */}
+                   <div className="w-full bg-[#2c1810]/90 p-4 rounded-xl border border-[#5d4037] text-xs text-amber-100/90 shadow-lg backdrop-blur-sm">
+                     <div className="font-bold text-amber-400 flex items-center gap-2 border-b border-[#5d4037] pb-2 mb-2">
+                       <BookOpen size={14} /> 핵심 규칙 가이드
+                     </div>
+                     <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                       <div className="flex justify-between items-center border-b border-white/5 pb-1">
+                         <span className="text-gray-400">윷가락</span>
+                         <span className="font-bold">매일 미션 (일일 3 + 주간 2)</span>
+                       </div>
+                       <div className="flex justify-between items-center border-b border-white/5 pb-1">
+                         <span className="text-gray-400">CP보상</span>
+                         <span className="font-bold text-amber-300">6칸 이동마다 자동 지급</span>
+               </div>
+               <div className="flex justify-between items-center border-b border-white/5 pb-1">
+                 <span className="text-gray-400">완주보상</span>
+                 <span className="font-bold text-amber-300">출발점 통과 시 '받기'</span>
+               </div>
+               <div className="flex justify-between items-center border-b border-white/5 pb-1">
+                 <span className="text-gray-400">목표</span>
+                 <span className="font-bold text-green-400">14일 참여 시 100% 완료</span>
+               </div>
+             </div>
+           </div>
+        </section>
+
+        {/* 4. 우측 패널 (소비/결과) */}
+        <section className="lg:col-span-3 flex flex-col gap-4">
+          
+          <div className="bg-[#3e2723] p-4 rounded-xl border border-[#5d4037] shadow-lg text-center">
+            <button 
+              onClick={handleThrow} 
+              disabled={throwsAvailable <= 0 || isMoving || (cpLevel >= CONFIG.CP_MAX && lapCount >= CONFIG.MAX_LAPS && lapClaimed[CONFIG.MAX_LAPS])}
+              className={`w-full py-3 rounded-lg font-bold text-lg mb-3 shadow-md transition-all ${throwsAvailable > 0 && !isMoving ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:scale-[1.02]' : 'bg-slate-700 text-gray-500 cursor-not-allowed'}`}
+            >
+              {isMoving ? <RefreshCw className="animate-spin inline"/> : '윷 던지기'}
+            </button>
+            
+            {/* A) 던지기 카드 보강 안내문 */}
+            {throwsAvailable === 0 && cpLevel < CONFIG.CP_MAX && (
+              <div className="text-[10px] text-red-400 mt-1 font-bold animate-pulse">
+                윷가락이 부족해요. 미션을 완료하고 받아가세요!
+              </div>
+            )}
+
+            <div className="text-xs text-amber-200/80 space-x-2 font-mono border-t border-white/10 pt-2 mt-2">
+              <span>도1</span><span>개2</span><span>걸3</span><span>윷4</span><span>모5</span>
+            </div>
+            <div className="text-[9px] text-gray-500 mt-1">100% 보장형 결과 풀 적용</div>
+            {lastThrow && <div className="mt-2 bg-black/20 py-1 rounded text-sm text-white font-bold animate-in fade-in">결과: {lastThrow.name} (+{lastThrow.move})</div>}
+          </div>
+
+          <div className="bg-[#2c1810] p-3 rounded-xl border border-[#5d4037] flex items-center gap-3">
+            <div className="bg-amber-900/50 p-2 rounded-full"><Zap size={16} className="text-yellow-400"/></div>
+            <div className="text-xs text-gray-300">
+              <span className="text-amber-400 font-bold block mb-0.5">지름길 규칙</span>
+              분기점 정확히 도착 시 지름길 자동 이동
+            </div>
+          </div>
+
+          {/* 일러스트/완주 보상 패널 (수동 수령 적용) */}
+          <div className="bg-[#3e2723] p-4 rounded-xl border border-[#5d4037] shadow-lg flex-1 flex flex-col">
+            <div className="flex justify-between items-center mb-3">
+              <span className="font-bold text-amber-400 text-sm flex items-center gap-2"><LayoutGrid size={14}/> 일러스트 (완주)</span>
+              <span className="text-[10px] text-gray-400">Lap {lapCount}/4</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 aspect-square mb-3">
+              {[1, 2, 3, 4].map((target, i) => {
+                const isUnlocked = lapCount >= target; // 달성 여부
+                const isClaimed = lapClaimed[target];  // 수령 여부
+                const isClaimable = isUnlocked && !isClaimed; // 수령 가능 여부
+
+                return (
+                  <div key={i} className="relative rounded bg-black/40 overflow-hidden border border-[#5d4037]">
+                    {/* Image Layer (Revealed only after claiming) */}
+                    <div className={`absolute inset-0 transition-opacity duration-1000 ${isClaimed ? 'opacity-100' : 'opacity-0'}`}
+                         style={{ backgroundImage: `url('${ILLUST_IMAGE_URL}')`, backgroundSize: '200% 200%', backgroundPosition: `${(i%2)*100}% ${Math.floor(i/2)*100}%` }} />
+                    
+                    {/* Overlay Logic */}
+                    {!isClaimed && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#2c1810]/90 p-1">
+                        {isClaimable ? (
+                          <button 
+                            onClick={() => claimLapReward(target)}
+                            className="bg-red-600 hover:bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg animate-pulse flex flex-col items-center gap-0.5"
+                          >
+                            <Gift size={14} />
+                            <span>받기</span>
+                          </button>
+                        ) : (
+                          <>
+                            <Lock size={16} className="mb-1 text-[#8d6e63]"/>
+                            <span className="text-[9px] text-[#8d6e63]">Lap {target}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Claimed Indicator */}
+                    {isClaimed && (
+                      <div className="absolute top-1 right-1 bg-green-500/80 p-0.5 rounded-full">
+                        <Check size={10} className="text-white" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="text-center text-[10px] text-gray-400 mt-auto">
+              {lapClaimed[4] ? <span className="text-green-400 font-bold">완료! 전체 일러스트 획득</span> : `완주 시 '받기' 버튼이 활성화됩니다`}
+            </div>
+          </div>
+
+          <div className="w-full bg-black/40 h-24 rounded-lg overflow-y-auto font-mono text-[10px] text-gray-400 p-2 custom-scrollbar">
+             {logs.map((l, i) => <div key={i} className="border-b border-white/5 pb-0.5 mb-0.5">{l}</div>)}
+          </div>
+
+        </section>
+      </main>
+
+      {/* Styles */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+      `}</style>
+    </div>
+  );
+}
+
+// React Mount
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+    </script>
+</body>
+</html>
